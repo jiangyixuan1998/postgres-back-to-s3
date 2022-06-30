@@ -1,0 +1,1 @@
+一个用来同步备份postgres数据到s3/minio的小工具
