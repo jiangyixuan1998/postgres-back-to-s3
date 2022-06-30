@@ -1,0 +1,54 @@
+kind: CronJob
+apiVersion: batch/v1beta1
+metadata:
+  name: postgresql-back
+  namespace: klab
+spec:
+  jobTemplate:
+    metadata:
+      labels:
+        app: postgresql-back
+    spec:
+      template:
+        metadata:
+          labels:
+            app: postgresql-back
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: postgresql-back
+            image: registry.cn-shanghai.aliyuncs.com/kcr-3rd/pgsqldump:v1
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: POSTGRES_PASSWORD
+                value: postgres
+              - name: POSTGRES_ROOT_USER
+                value: "postgres"                          #admin权限的POSTGRES用户名
+              - name: PGPASSWORD
+                value: "postgres"                          #admin权限的用户名密码
+              - name: POSTGRES_HOST
+                value: "192.168.16.242"                    #POSTGRES数据库的host
+              - name: POSTGRES_PORT
+                value: "5432"                              #POSTGRES数据库的端口
+              - name: AWS_ACCESS_KEY_ID
+                value: "admin"                             #aws/minio的access_key
+              - name: AWS_SECRET_ACCESS_KEY
+                value: "icSJHfPKpN"                        #aws/minio的secret_key
+              - name: AWS_DEFAULT_REGION
+                value: "cn-northwest-1"                    #aws使用的存储区域，minio可以默认不动
+              - name: S3_ENDPOINT_URL
+                value: "http://192.168.16.103:9000"        #aws/minio的url
+              - name: S3_BUCKETS
+                value: "heywhale"                          #存储数据使用的bucket_name
+              
+            command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              pg_dumpall -U $POSTGRES_ROOT_USER -h  $POSTGRES_HOST -p $POSTGRES_PORT --inserts >/home/`date +%Y_%m_%d`.sql
+              aws s3 cp /home/`date +%Y_%m_%d`.sql s3://$S3_BUCKETS --endpoint $S3_ENDPOINT_URL       
+  schedule: "\"0 1 * * *\""
+  concurrencyPolicy: Forbid
+  suspend: false
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
