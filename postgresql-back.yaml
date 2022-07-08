@@ -50,5 +50,6 @@ spec:
   schedule: "\"0 1 * * *\""
   concurrencyPolicy: Forbid
   suspend: false
+  ttlSecondsAfterFinished: 100
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 1
